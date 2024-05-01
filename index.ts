@@ -29,21 +29,22 @@ const DISCORD_TOKEN = cfg.discord.token || "";
 const CHANNEL_ID = cfg.discord.channelId || "";
 
 // Initialize the TeamSpeak client
-console.log("⌛ Waiting 5 seconds to give time to the TS server...");
-await new Promise((resolve) => setTimeout(resolve, 5_000));
+console.log("⌛ Connecting to TS server...");
+await new Promise((resolve) => setTimeout(resolve, 1_000));
 
-const tsClient = new TeamSpeakClient(cfg.teamspeak.serverIp);
+const tsClient = new TeamSpeakClient(
+  cfg.teamspeak.serverIp,
+  cfg.teamspeak.queryPort
+);
 try {
   await tsClient.connect();
   await tsClient.send("use", { sid: 1 });
-  const me = await (tsClient.send as any)("whoami");
-  console.log(me);
   await (tsClient.send as any)("login", {
     client_login_name: cfg.teamspeak.username,
     client_login_password: cfg.teamspeak.password,
   });
   const clientList = await tsClient.send("clientlist", {});
-  console.log(clientList);
+  console.log("TS Clientlist (debug purposes):", clientList);
   await tsClient.subscribePrivateTextEvents(); // Tell the server we want to receive private text events
   // Register a callback for these events
   tsClient.on("textmessage", (data) => {
@@ -127,7 +128,7 @@ async function updateChannelNamePeriodically(): Promise<void> {
     // Checking if setName method exists
     let newName: string;
     userCount === 0
-      ? (newName = "❌-nobody-on-ts")
+      ? (newName = `❌-nobody-on-ts`)
       : (newName = `✅-${userCount}-on-ts`);
 
     try {
@@ -136,7 +137,7 @@ async function updateChannelNamePeriodically(): Promise<void> {
       console.log(`✅ Updated channel name to "${newName}"`);
       lastChannelNameUserCount = userCount;
     } catch (error) {
-      console.error("❌ Failed to update channel name:", error);
+      console.error(`❌ Failed to update channel name:`, error);
     }
   }
 }
@@ -145,17 +146,19 @@ async function updateChannelNamePeriodically(): Promise<void> {
 async function getActiveUsersFromTeamSpeak(): Promise<number> {
   try {
     const data = await tsClient.send("clientlist", {});
-    return countUniqueUsers(data); // Return the number of unique users
+    return countUniqueTSUsers(data); // Return the number of unique users
   } catch (error) {
     console.error("Failed to retrieve TeamSpeak user count:", error);
     return 0; // Return 0 if the query fails
   }
 }
 
-function countUniqueUsers(data: any): number {
+function countUniqueTSUsers(data: any): number {
   const uniqueUsers = _.uniqBy(data.response, "client_database_id");
   return uniqueUsers.length; // Return the length of array with unique users
 }
 
 // Start the bot by logging the bot in to Discord
+console.log("⌛ Logging in to Discord...");
 discordClient.login(DISCORD_TOKEN);
+console.log("✅ Bot started successfully!");
