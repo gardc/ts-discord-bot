@@ -4,26 +4,47 @@ import process from "node:process";
 import "dotenv/config";
 
 // Configuration
-const DISCORD_TOKEN = process.env.DISCORD_TOKEN || "";
-const CHANNEL_ID = process.env.DISCORD_CHANNEL_ID || "";
+const cfg = {
+  discord: {
+    token: process.env.DISCORD_TOKEN,
+    channelId: process.env.DISCORD_CHANNEL_ID,
+  },
+  teamspeak: {
+    queryPort: parseInt(process.env.TS_QUERY_PORT || ""),
+    serverPort: parseInt(process.env.TS_SERVER_PORT || ""),
+    serverIp: process.env.TS_SERVER_IP,
+    username: process.env.TS_USERNAME,
+    password: process.env.TS_PASSWORD,
+    nickname: process.env.TS_NICKNAME,
+  },
+  singularTerm: process.env.SINGULAR_TERM,
+  pluralTerm: process.env.PLURAL_TERM,
+}
+const singularTerm = cfg.singularTerm || "person";
+const pluralTerm = cfg.pluralTerm || "people";
+console.log(cfg);
+
+const DISCORD_TOKEN = cfg.discord.token || "";
+const CHANNEL_ID = cfg.discord.channelId || "";
 // Initialize the TeamSpeak client
 const tsClient = new TeamSpeak({
   protocol: QueryProtocol.RAW, // This could be RAW or SSH depending on your setup
-  queryport: parseInt(process.env.TS_QUERY_PORT || ""),
-  serverport: parseInt(process.env.TS_SERVER_PORT || ""),
-  host: process.env.TS_SERVER_IP,
-  username: process.env.TS_USERNAME,
-  password: process.env.TS_PASSWORD,
-  nickname: process.env.TS_NICKNAME,
+  queryport: cfg.teamspeak.queryPort || 0,
+  serverport: cfg.teamspeak.serverPort || 0,
+  host: cfg.teamspeak.serverIp,
+  username: cfg.teamspeak.username,
+  password: cfg.teamspeak.password,
+  nickname: cfg.teamspeak.nickname,
 });
+await tsClient.connect();
+// Discord
 const discordClient = new Client({
   intents: ["Guilds", "GuildMessages"],
   rest: {
     rejectOnRateLimit: () => true,
   },
 });
-const singularTerm = process.env.SINGULAR_TERM || "person";
-const pluralTerm = process.env.PLURAL_TERM || "people";
+
 
 // State
 let lastPresenceUserCount = -1;
@@ -49,6 +70,8 @@ async function updatePresencePeriodically() {
 
   // check if precense is different from the current state before updating
   if (userCount === lastPresenceUserCount) return;
+  
+  console.log(`⌛ Updating presence with ${userCount} ${pluralTerm}...`);
 
   let status: string;
   switch (userCount) {
@@ -72,6 +95,8 @@ async function updatePresencePeriodically() {
     ],
   });
   lastPresenceUserCount = userCount;
+
+  console.log(`✅ Updated presence with ${userCount} ${pluralTerm}`);
 }
 
 // Function to update Discord channel name
