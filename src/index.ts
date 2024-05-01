@@ -36,7 +36,11 @@ const tsClient = new TeamSpeak({
   password: cfg.teamspeak.password,
   nickname: cfg.teamspeak.nickname,
 });
+
+console.log("⌛ Waiting 5 seconds to give time to the TS server...");
+await new Promise((resolve) => setTimeout(resolve, 5_000));
 await tsClient.connect();
+
 // Discord
 const discordClient = new Client({
   intents: ["Guilds", "GuildMessages"],
