@@ -146,7 +146,9 @@ async function updateChannelNamePeriodically(): Promise<void> {
 async function getActiveUsersFromTeamSpeak(): Promise<number> {
   try {
     const data = await tsClient.send("clientlist", {});
-    return countUniqueTSUsers(data); // Return the number of unique users
+    const count = countUniqueTSUsers(data);
+    // console.log(`⚠️ TeamSpeak data (debug purposes):`, data);
+    return count; // Return the number of unique users
   } catch (error) {
     console.error("Failed to retrieve TeamSpeak user count:", error);
     return 0; // Return 0 if the query fails
@@ -154,7 +156,8 @@ async function getActiveUsersFromTeamSpeak(): Promise<number> {
 }
 
 function countUniqueTSUsers(data: any): number {
-  const uniqueUsers = _.uniqBy(data.response, "client_database_id");
+  const activeUsers = data.response.filter((client: any) => client.client_type === 0);
+  const uniqueUsers = _.uniqBy(activeUsers, "client_database_id");
   return uniqueUsers.length; // Return the length of array with unique users
 }
 
