@@ -156,9 +156,11 @@ async function getActiveUsersFromTeamSpeak(): Promise<number> {
 }
 
 function countUniqueTSUsers(data: any): number {
-  const activeUsers = data.response.filter((client: any) => client.client_type === 0);
-  const uniqueUsers = _.uniqBy(activeUsers, "client_database_id");
-  return uniqueUsers.length; // Return the length of array with unique users
+  return _.chain(data.response)
+    .filter({ client_type: 0 })  // Filter first to only process relevant entries
+    .uniqBy('client_database_id')
+    .value()
+    .length;
 }
 
 // Start the bot by logging the bot in to Discord
